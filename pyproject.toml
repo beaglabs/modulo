@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "modulo-systemone"
+version = "0.2.0"
+description = "Modular multimodal System 1 SDK, student training and serving"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.26", "requests>=2.31"]
+[project.optional-dependencies]
+train = ["torch>=2.2"]
+serve = ["fastapi>=0.110", "uvicorn>=0.29"]
+image = ["pillow>=10", "torch>=2.2", "transformers>=4.44,<5"]
+audio = ["soundfile>=0.12", "torch>=2.2", "transformers>=4.44,<5"]
+raster = ["rasterio>=1.3"]
+geospatial = ["rasterio>=1.3", "pyproj>=3.6"]
+science = ["xarray>=2024.1", "zarr>=2.17", "pyteomics>=4.6"]
+all = ["torch>=2.2","fastapi>=0.110","uvicorn>=0.29","pillow>=10","soundfile>=0.12","transformers>=4.44,<5","rasterio>=1.3","pyproj>=3.6","xarray>=2024.1","zarr>=2.17","pyteomics>=4.6"]
+[project.scripts]
+modulo = "modulo.cli:main"
+[project.entry-points."modulo.encoders"]
+[project.entry-points."modulo.adapters"]
+[project.entry-points."modulo.heads"]
+[tool.setuptools.packages.find]
+where = ["src"]
