@@ -18,7 +18,7 @@ CATALOG = f"https://www.sciencebase.gov/catalog/item/{ITEM_ID}"
 API = f"https://www.sciencebase.gov/catalog/item/{ITEM_ID}?format=json"
 BAD = -1.23e34
 SOURCE = "usgs-splib07a"
-SPECTRAL_RE = re.compile(r"_(REF|AREF|RREF|REFF|REFL|TRANS|EMIS)\\.txt$", re.I)
+SPECTRAL_RE = re.compile(r"_(REF|AREF|RREF|REFF|REFL|TRANS|EMIS)\.txt$", re.I)
 IGNORED = ("wavelength", "bandpass", "fwhm", "errorbar", "standarddeviation")
 
 def digest(path):
