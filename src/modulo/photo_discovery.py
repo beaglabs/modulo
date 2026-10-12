@@ -7,7 +7,7 @@ from pathlib import Path
 from urllib.parse import urlparse, unquote
 from urllib.request import urlopen, urlretrieve
 from html.parser import HTMLParser
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipFile, is_zipfile
 from collections import defaultdict
 import csv
 import json
@@ -61,6 +61,7 @@ def download_sources(output, archive_urls=None):
     selected=[x for x in items if x["name"].lower().endswith(".zip")
               and any(k in x["name"].lower() for k in ("htmlmetadata","specprslib07"))]
     summaries=[]
+    failures=[]
     for entry in selected:
         url=entry["url"]
         host=(urlparse(url).hostname or "").lower()
@@ -68,20 +69,32 @@ def download_sources(output, archive_urls=None):
             if not archive_urls: raise ValueError("Untrusted archive location: "+url)
             if urlparse(url).scheme!="https": raise ValueError("HTTPS required")
         location=output/entry["name"]
-        if not location.is_file():
-            temp=location.with_suffix(location.suffix+".part")
-            try:
-                urlretrieve(url,temp)
-                with ZipFile(temp) as z:
-                    if z.testzip() is not None: raise ValueError("corrupt archive")
-                temp.replace(location)
-            finally: temp.unlink(missing_ok=True)
-        with ZipFile(location) as z: _safe_extract(z,output/"sources")
-        summaries.append({"archive":str(location),"sha256":digest(location),"url":url})
-    report={"archives":summaries,"html_files":len(list((output/"sources").rglob("*.html")))+len(list((output/"sources").rglob("*.htm"))),
+        try:
+            if location.is_file() and not is_zipfile(location):
+                location.unlink()  # remove a previously cached HTML/error response
+            if not location.is_file():
+                temp=location.with_suffix(location.suffix+".part")
+                try:
+                    urlretrieve(url,temp)
+                    if not is_zipfile(temp):
+                        with temp.open("rb") as response:
+                            signature=response.read(160).decode("utf-8",errors="replace").replace("\\n"," ")
+                        raise ValueError("ScienceBase returned non-ZIP content: "+repr(signature[:120]))
+                    with ZipFile(temp) as z:
+                        if z.testzip() is not None: raise ValueError("corrupt ZIP archive")
+                    temp.replace(location)
+                finally: temp.unlink(missing_ok=True)
+            with ZipFile(location) as z: _safe_extract(z,output/"sources")
+            summaries.append({"archive":str(location),"sha256":digest(location),"url":url})
+        except (ValueError, BadZipFile, OSError) as exc:
+            failures.append({"name":entry["name"],"url":url,"reason":str(exc)})
+            continue
+    report={"archives":summaries,"failures":failures,"status":"partial" if failures else "ok","html_files":len(list((output/"sources").rglob("*.html")))+len(list((output/"sources").rglob("*.htm"))),
             "image_files":sum(1 for p in (output/"sources").rglob("*") if p.suffix.lower() in IMAGE_SUFFIXES),
             "note":"Discovered assets only; no inferred specimen identity"}
     (output/"discovery-manifest.json").write_text(json.dumps(report,indent=2))
+    if failures and not summaries and report["html_files"] == 0:
+        report["status"]="source_download_failed"
     return report
 
 def discover_candidates(dataset="datasets/usgs-v7", sources="datasets/raw/usgs-v2/sources",
