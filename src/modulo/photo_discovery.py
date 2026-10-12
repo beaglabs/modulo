@@ -4,7 +4,7 @@ The ScienceBase SPECPR and HTMLmetadata archives contain explicit metadata/photo
 links. A candidate is never automatically asserted as a verified physical pair.
 """
 from pathlib import Path
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, quote
 from urllib.request import urlopen, urlretrieve
 from html.parser import HTMLParser
 from zipfile import ZipFile, BadZipFile, is_zipfile
@@ -28,7 +28,7 @@ class Links(HTMLParser):
 def _official_files(item):
     with urlopen(SCIENCEBASE+item+"?format=json", timeout=45) as response:
         metadata=json.load(response)
-    return [{"name":f.get("name",""),"url":f.get("downloadUri") or f.get("url")}
+    return [{"name":f.get("name",""),"url":f.get("downloadUri") or f.get("url"),"item_id":item}
             for f in metadata.get("files",[])
             if f.get("name") and (f.get("downloadUri") or f.get("url"))]
 
@@ -69,25 +69,42 @@ def download_sources(output, archive_urls=None):
             if not archive_urls: raise ValueError("Untrusted archive location: "+url)
             if urlparse(url).scheme!="https": raise ValueError("HTTPS required")
         location=output/entry["name"]
+        alternatives=[url]
+        if entry.get("item_id"):
+            item=entry["item_id"]
+            name=quote(entry["name"],safe="")
+            alternatives.extend([
+                f"https://www.sciencebase.gov/catalog/file/get/{item}?name={name}",
+                f"https://www.sciencebase.gov/catalog/file/get/{item}?f=__disk__{name}",
+            ])
+        errors=[]
         try:
-            if location.is_file() and not is_zipfile(location):
-                location.unlink()  # remove a previously cached HTML/error response
+            if location.is_file() and not is_zipfile(location): location.unlink()
             if not location.is_file():
-                temp=location.with_suffix(location.suffix+".part")
-                try:
-                    urlretrieve(url,temp)
-                    if not is_zipfile(temp):
-                        with temp.open("rb") as response:
-                            signature=response.read(160).decode("utf-8",errors="replace").replace("\\n"," ")
-                        raise ValueError("ScienceBase returned non-ZIP content: "+repr(signature[:120]))
-                    with ZipFile(temp) as z:
-                        if z.testzip() is not None: raise ValueError("corrupt ZIP archive")
-                    temp.replace(location)
-                finally: temp.unlink(missing_ok=True)
+                for candidate in alternatives:
+                    temp=location.with_suffix(location.suffix+".part")
+                    try:
+                        urlretrieve(candidate,temp)
+                        if not is_zipfile(temp):
+                            with temp.open("rb") as response:
+                                signature=response.read(130).decode("utf-8",errors="replace").replace("\\n"," ")
+                            raise ValueError("non-ZIP response "+repr(signature[:100]))
+                        with ZipFile(temp) as z:
+                            if z.testzip() is not None: raise ValueError("corrupt ZIP archive")
+                        temp.replace(location)
+                        url=candidate
+                        break
+                    except (ValueError,OSError,BadZipFile) as exc:
+                        errors.append({"url":candidate,"reason":str(exc)})
+                    finally:
+                        temp.unlink(missing_ok=True)
+            if not location.is_file():
+                failures.append({"name":entry["name"],"attempts":errors})
+                continue
             with ZipFile(location) as z: _safe_extract(z,output/"sources")
             summaries.append({"archive":str(location),"sha256":digest(location),"url":url})
         except (ValueError, BadZipFile, OSError) as exc:
-            failures.append({"name":entry["name"],"url":url,"reason":str(exc)})
+            failures.append({"name":entry["name"],"reason":str(exc),"attempts":errors})
             continue
     report={"archives":summaries,"failures":failures,"status":"partial" if failures else "ok","html_files":len(list((output/"sources").rglob("*.html")))+len(list((output/"sources").rglob("*.htm"))),
             "image_files":sum(1 for p in (output/"sources").rglob("*") if p.suffix.lower() in IMAGE_SUFFIXES),
