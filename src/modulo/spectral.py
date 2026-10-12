@@ -52,7 +52,7 @@ class SpectralEncoder:
                     raise ValueError("Spectral path must be a GeoTIFF")
                 import rasterio  # optional dependency
                 with rasterio.open(path) as dataset:
-                    cube = dataset.read(masked=True).filled(np.nan)
+                    cube = dataset.read(masked=True).astype(np.float64).filled(np.nan)
                 band_axis = 0
             elif "cube" in observation:
                 cube = np.asarray(observation["cube"], dtype=np.float64)
