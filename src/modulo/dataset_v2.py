@@ -15,9 +15,12 @@ from .spectral_dataset import _read, _write, digest, fetch as fetch_spectra, CAT
 REQUIRED = {"sample_id", "specimen_id", "mineral", "photo_path", "evidence_uri"}
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"}
 
-def prepare(spectral_dir, crosswalk, images_root, output):
+def prepare(spectral_dir, crosswalk=None, images_root=None, output="datasets/usgs-v2", archive="datasets/raw/usgs-v2/ASCIIdata_splib07a.zip"):
     """Prepare paired V2 records from V1, curated crosswalk and local real photos."""
-    spectral_dir, crosswalk, images_root, output = map(Path, (spectral_dir, crosswalk, images_root, output))
+    spectral_dir, output = Path(spectral_dir), Path(output)
+    if not crosswalk or not images_root:
+        return stage_unpaired(spectral_dir, output, archive)
+    crosswalk, images_root = Path(crosswalk), Path(images_root)
     if output.exists() and any(output.iterdir()):
         raise ValueError("V2 output directory must be empty")
     spectra = _read(spectral_dir / "records.parquet")
@@ -161,3 +164,33 @@ def fetch(output="datasets/raw/usgs-v2", url=None, expected_sha256=None):
     }
     (directory / "source-manifest.json").write_text(json.dumps(manifest, indent=2))
     return manifest
+
+def stage_unpaired(spectral_dir, output, archive):
+    """Prepare measured spectra and generate an explicitly unverified pairing worklist."""
+    from .spectral_dataset import prepare as prepare_spectra
+    if output.exists() and any(output.iterdir()):
+        raise ValueError("V2 staging output must be empty; choose a new --output")
+    if not (spectral_dir/"records.parquet").is_file():
+        source = Path(archive)
+        if not source.is_file():
+            raise FileNotFoundError("Missing spectral archive. Run 'modulo dataset fetch usgs-v2' first")
+        prepare_spectra(source, spectral_dir)
+    records = _read(spectral_dir/"records.parquet")
+    output.mkdir(parents=True, exist_ok=True)
+    worklist=output/"pairing-worklist.csv"
+    with worklist.open("w",newline="",encoding="utf-8") as handle:
+        columns=["sample_id","specimen_proxy_unverified","mineral_label_unverified",
+                 "source_file","specimen_id","mineral","photo_path","evidence_uri"]
+        writer=csv.DictWriter(handle,fieldnames=columns)
+        writer.writeheader()
+        for row in records:
+            writer.writerow({"sample_id":row["sample_id"],
+                "specimen_proxy_unverified":row["specimen_id"],
+                "mineral_label_unverified":row["mineral"],
+                "source_file":row["source_file"]})
+    result={"status":"awaiting_verified_photo_pairs",
+        "spectra":len(records),"verified_pairs":0,
+        "worklist":str(worklist),
+        "message":"Spectra prepared. No guessed specimen-photo links created."}
+    (output/"staging-manifest.json").write_text(json.dumps(result,indent=2))
+    return result
