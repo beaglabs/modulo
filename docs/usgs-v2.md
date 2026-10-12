@@ -56,3 +56,19 @@ also records `verified_pairs: 0` because the candidate link is not proof that
 the metadata filename identifies the same specimen as the spectrum.
 Crosswalk-based verified preparation remains required. Use
 `modulo dataset discover usgs-v2` to rescan downloaded source files.
+
+### ScienceBase large-file download limitation
+
+ScienceBase may return an HTML staging page for large files instead of ZIP bytes.
+The downloader never treats that as a successful archive. If this occurs, use
+the official USGS Spectral Library Version 7 data release page to download the
+full `usgs_splib07.zip` archive through its browser-supported large-file
+workflow, then import the local archive:
+
+```bash
+modulo dataset discover usgs-v2 --archive /path/to/usgs_splib07.zip
+```
+
+The import path supports the full release archive as well as separate metadata
+archives. It enumerates candidate links only: official specimen IDs still must
+be reconciled before pairs can be marked verified.

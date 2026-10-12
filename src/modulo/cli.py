@@ -20,7 +20,7 @@ def main(argv=None):
     x=ds.add_parser("split");x.add_argument("source",choices=["usgs-v7","usgs-v2"]);x.add_argument("--dataset");x.add_argument("--group-by",choices=["specimen"],default="specimen");x.add_argument("--train",type=float,default=.7);x.add_argument("--val",type=float,default=.15);x.add_argument("--test",type=float,default=.15);x.add_argument("--seed",type=int,default=42)
     y=ds.add_parser("validate");y.add_argument("source",choices=["usgs-v7","usgs-v2"]);y.add_argument("--dataset")
     au=ds.add_parser("audit");au.add_argument("source",choices=["usgs-v2"]);au.add_argument("--dataset",default="datasets/usgs-v2")
-    discover=ds.add_parser("discover");discover.add_argument("source",choices=["usgs-v2"]);discover.add_argument("--dataset",default="datasets/usgs-v7");discover.add_argument("--sources",default="datasets/raw/usgs-v2/sources");discover.add_argument("--output",default="datasets/usgs-v2/photo-candidates.csv");discover.add_argument("--download",action="store_true")
+    discover=ds.add_parser("discover");discover.add_argument("source",choices=["usgs-v2"]);discover.add_argument("--dataset",default="datasets/usgs-v7");discover.add_argument("--sources",default="datasets/raw/usgs-v2/sources");discover.add_argument("--output",default="datasets/usgs-v2/photo-candidates.csv");discover.add_argument("--download",action="store_true");discover.add_argument("--archive",action="append",help="Local official USGS ZIP, repeatable")
     e=ds.add_parser("export");e.add_argument("source",choices=["usgs-v7","usgs-v2"]);e.add_argument("--dataset");e.add_argument("--format",choices=["parquet"],default="parquet");e.add_argument("--output",required=True)
     args=p.parse_args(argv)
     if args.action=="dataset":
@@ -29,14 +29,17 @@ def main(argv=None):
         from . import dataset_v2 as v2
         if action=="discover":
             from . import photo_discovery
+            imported = [photo_discovery.import_local_archive(path,args.sources) for path in (args.archive or [])]
             download_report = photo_discovery.download_sources(Path(args.sources).parent) if args.download else None
-            if download_report and not download_report["html_files"]:
+            available_html = any(path.suffix.lower() in (".html",".htm") for path in Path(args.sources).rglob("*") if path.is_file())
+            if download_report and not available_html:
                 result={"status":download_report["status"],"candidate_links":0,"verified_pairs":0,
                         "download":download_report,
                         "error":"No HTML metadata was downloaded; cannot search for specimen-photo pairs."}
             else:
                 result=photo_discovery.discover_candidates(args.dataset,args.sources,args.output)
                 if download_report: result["download"]=download_report
+            if imported: result["imports"]=imported
         elif action=="audit": result=v2.audit(args.dataset)
         elif action=="fetch" and args.source=="usgs-v2": result=v2.fetch(args.output or "datasets/raw/usgs-v2",url=args.url,expected_sha256=args.sha256)
         elif action=="fetch": result={"archive":str(sd.fetch(args.output or "datasets/raw/ASCIIdata_splib07a.zip",url=args.url,expected_sha256=args.sha256))}

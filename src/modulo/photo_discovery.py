@@ -45,6 +45,20 @@ def _safe_extract(z, root):
             import shutil
             shutil.copyfileobj(source,dst)
 
+def import_local_archive(archive, sources):
+    """Extract a user-provided official USGS archive without a network request."""
+    archive, sources = Path(archive), Path(sources)
+    if not archive.is_file() or not is_zipfile(archive):
+        raise ValueError(f"Not a valid local ZIP: {archive}")
+    sources.mkdir(parents=True,exist_ok=True)
+    with ZipFile(archive) as z:
+        if z.testzip() is not None: raise ValueError("Corrupt local ZIP")
+        _safe_extract(z,sources)
+    return {"status":"local_archive_imported","archive":str(archive),
+            "sha256":digest(archive),
+            "html_files":sum(q.suffix.lower() in (".html",".htm") for q in sources.rglob("*") if q.is_file()),
+            "image_files":sum(q.suffix.lower() in IMAGE_SUFFIXES for q in sources.rglob("*") if q.is_file())}
+
 def download_sources(output, archive_urls=None):
     """Discover archive URLs from official catalog metadata; stage HTML and photos.
 
