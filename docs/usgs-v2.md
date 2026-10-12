@@ -46,3 +46,13 @@ hf jobs uv run --flavor h200 --timeout 2h30m --with torch --with numpy \
 Ensure dataset files are accessible to the remote job and artifacts are
 persisted outside the ephemeral runner before launching. The command above
 is illustrative; the actual bundled benchmark runs as a Python module.
+
+## Discover official photo candidates
+
+Run `modulo dataset discover usgs-v2 --download` to query the official USGS
+ScienceBase HTMLmetadata/SPECPRsplib07 archive entries, extract HTML and images,
+and write `datasets/usgs-v2/photo-candidates.csv` with source links. The report
+also records `verified_pairs: 0` because the candidate link is not proof that
+the metadata filename identifies the same specimen as the spectrum.
+Crosswalk-based verified preparation remains required. Use
+`modulo dataset discover usgs-v2` to rescan downloaded source files.
