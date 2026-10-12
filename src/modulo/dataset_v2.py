@@ -96,7 +96,15 @@ def split(dataset, seed=42, train=.7, val=.15, test=.15):
     dataset = Path(dataset)
     if any(v<=0 for v in (train,val,test)) or abs(train+val+test-1)>1e-8:
         raise ValueError("fractions must be positive and total 1")
+    if (dataset/"staging-manifest.json").is_file() and not (dataset/"records.parquet").is_file():
+        result = audit(dataset)
+        result["split_created"] = False
+        return result
+    if not (dataset/"records.parquet").is_file():
+        raise ValueError("No paired V2 records; prepare verified specimen-photo pairs first")
     rows = _read(dataset/"records.parquet")
+    if not rows or any(not r.get("pair_verified") or not r.get("specimen_verified") or not r.get("photo_path") or not r.get("evidence_uri") for r in rows):
+        raise ValueError("V2 split requires verified specimen-photo pairs")
     grouped = defaultdict(list)
     for row in rows: grouped[row["specimen_id"]].append(row)
     keys = sorted(grouped)
@@ -122,6 +130,10 @@ def audit(dataset):
             return result
         raise FileNotFoundError(f"No prepared V2 dataset at {dataset}. Run modulo dataset prepare usgs-v2 first.")
     rows=_read(dataset/"records.parquet")
+    if not rows or any(not r.get("pair_verified") or not r.get("specimen_verified") or not r.get("photo_path") or not r.get("evidence_uri") for r in rows):
+        result={"passed":False,"status":"unverified_or_wrong_dataset","verified_pairs":0}
+        (dataset/"audit.json").write_text(json.dumps(result,indent=2))
+        return result
     by_sample=defaultdict(set)
     by_specimen=defaultdict(set)
     problems=[]
