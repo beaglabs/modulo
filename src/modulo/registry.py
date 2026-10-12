@@ -2,7 +2,7 @@
 from importlib.metadata import entry_points
 
 KINDS = ("encoders", "adapters", "heads")
-DOMAINS = ("raster", "geospatial", "scientific", "image", "video", "audio", "logs")
+DOMAINS = ("raster", "geospatial", "scientific", "spectral", "image", "video", "audio", "logs")
 
 class Registry:
     def __init__(self):
@@ -33,9 +33,10 @@ class Registry:
 
 def defaults():
     from .domains import RasterEncoder, GeospatialEncoder, ScientificEncoder, ImageEncoder, VideoEncoder, AudioEncoder, LogsEncoder
+    from .spectral import SpectralEncoder
     from .core import IdentityAdapter, LinearHead
     r=Registry()
-    for name, cls in (("raster",RasterEncoder),("geospatial",GeospatialEncoder),("scientific",ScientificEncoder),("image",ImageEncoder),("video",VideoEncoder),("audio",AudioEncoder),("logs",LogsEncoder)):
+    for name, cls in (("raster",RasterEncoder),("geospatial",GeospatialEncoder),("scientific",ScientificEncoder),("spectral",SpectralEncoder),("image",ImageEncoder),("video",VideoEncoder),("audio",AudioEncoder),("logs",LogsEncoder)):
         r.register("encoders",name,cls)
     r.register("adapters","identity",IdentityAdapter)
     r.register("heads","linear",LinearHead)

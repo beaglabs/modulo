@@ -1,6 +1,6 @@
 # Modulo
 
-**A modular System 1 SDK.** Build lightweight decisions over seven domains: **raster**, **geospatial**, **scientific**, **image**, **video**, **audio**, and **logs and traces**.
+**A modular System 1 SDK.** Build lightweight decisions over eight domains: **raster**, **geospatial**, **scientific**, **spectral**, **image**, **video**, **audio**, and **logs and traces**.
 
 ## Quick start
 
@@ -42,10 +42,13 @@ Models can be composed in code or `SystemOne.from_config(config, registry=regist
 | raster | Numeric pixels/arrays or GeoTIFF via optional rasterio |
 | geospatial | WGS84 coordinate features |
 | scientific | Fixed-length 1D signal features and simple CSV/XDI text |
+| spectral | Wavelength-aware 1D spectra and multispectral/hyperspectral cubes (optional rasterio for GeoTIFF) |
 | image | Frozen pretrained CLIP (optional image dependencies) |
 | video | Bounded frame pooling with CLIP/OpenCV (optional dependencies) |
 | audio | Frozen pretrained Wav2Vec2 at 16 kHz (optional dependencies) |
 | logs | Trace/error/timeout numeric summaries |
+
+See [spectral support](docs/spectral.md) for wavelength units, cube layouts, coverage semantics, and examples.
 
 These are starting encoders, **not yet domain-trained perception models**. Preserve CRS, timestamps, frequency axes, units, sensor metadata, and provenance for scientifically valid models. The initial built-in adapters and heads are simple; provide trained heads for useful decisions.
 
