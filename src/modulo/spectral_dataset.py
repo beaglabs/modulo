@@ -89,20 +89,16 @@ def _instrument_key(name):
     return "_".join(parts[-3:-1]).lower()
 
 def _wavelength_for(spectrum, wavefiles, count):
-    """Require a unique wavelength file matching sample length and spectrometer.
-
-    Use explicit matching first. Never silently attach a wavelength axis from
-    a different instrument just because the arrays happen to be equal length.
-    """
-    name = _name(spectrum)
-    stem = name.rsplit(".", 1)[0]
-    matches = []
-    for path, values in wavefiles.items():
-        if len(values) != count:
-            continue
-        key = _instrument_key(path)
-        if key and key in stem:
-            matches.append((path, values))
+    """Match the actual USGS instrument family and original channel count."""
+    name = _name(spectrum).upper()
+    m = re.search(r"_(ASD[A-Z0-9]*|BECK[A-Z0-9]*|NIC4[A-Z0-9]*|AVIRIS[A-Z0-9]*)_(?:A?REF|RREF|REFF|REFL|TRANS|EMIS)\\.TXT$", name)
+    if not m:
+        return None, "unknown_instrument"
+    code = m.group(1)
+    family = next(tag for tag in ("ASD", "BECK", "NIC4", "AVIRIS") if code.startswith(tag))
+    matches = [(path, values) for path, values in wavefiles.items()
+               if re.search(r"_WAVELENGTHS_" + family + r"(?:_|\\.)", _name(path), re.I)
+               and len(values) == count]
     if len(matches) != 1:
         return None, "missing_or_ambiguous_wavelength_axis"
     return matches[0], None
