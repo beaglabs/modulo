@@ -10,7 +10,7 @@ from collections import Counter, defaultdict
 from hashlib import sha256
 from pathlib import Path
 import numpy as np
-from .spectral_dataset import _read, _write, digest
+from .spectral_dataset import _read, _write, digest, fetch as fetch_spectra, CATALOG
 
 REQUIRED = {"sample_id", "specimen_id", "mineral", "photo_path", "evidence_uri"}
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff"}
@@ -138,3 +138,26 @@ def audit(dataset):
     (dataset/"audit.json").write_text(json.dumps(result,indent=2))
     if problems: raise ValueError(f"V2 audit failed: {problems}")
     return result
+
+def fetch(output="datasets/raw/usgs-v2", url=None, expected_sha256=None):
+    """Download official measured spectral archive and stage a V2 metadata manifest.
+
+    Photo acquisition cannot be inferred from the spectral archive; no specimen
+    imagery or verified crosswalk is claimed by this command.
+    """
+    directory = Path(output)
+    directory.mkdir(parents=True, exist_ok=True)
+    archive = fetch_spectra(directory / "ASCIIdata_splib07a.zip",
+                            url=url, expected_sha256=expected_sha256)
+    manifest = {
+        "source": "usgs-splib07a",
+        "source_catalog": CATALOG,
+        "archive": str(archive),
+        "archive_sha256": digest(archive),
+        "photos_downloaded": 0,
+        "verified_pairs": 0,
+        "status": "spectral_archive_fetched_photo_crosswalk_required",
+        "next": "Prepare usgs-v7 spectral records, acquire official specimen photos and verify the crosswalk before preparing usgs-v2",
+    }
+    (directory / "source-manifest.json").write_text(json.dumps(manifest, indent=2))
+    return manifest
