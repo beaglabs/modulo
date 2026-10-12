@@ -15,7 +15,7 @@ jobs:
       - name: Inspect measured archive
         run: |
           python - <<'PY'
-          from modulo.spectral_dataset import fetch, numbers
+          from modulo.spectral_dataset import fetch, numbers, prepare
           from zipfile import ZipFile
           import collections
           p=fetch('datasets/raw/ASCIIdata_splib07a.zip')
@@ -27,4 +27,5 @@ jobs:
               print('WAVELENGTH_EXAMPLES',repr([x for x in paths if 'wavelength' in x.lower()][:20]))
               for x in [v for v in paths if v.lower().endswith('.txt')][:8]:
                   print('EXAMPLE',repr(x),repr(z.read(x)[:170]))
+          print('PREPARE_RESULT',prepare(p,'datasets/usgs-validation'))
           PY
