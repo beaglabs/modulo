@@ -91,13 +91,13 @@ def _instrument_key(name):
 def _wavelength_for(spectrum, wavefiles, count):
     """Match the actual USGS instrument family and original channel count."""
     name = _name(spectrum).upper()
-    m = re.search(r"_(ASD[A-Z0-9]*|BECK[A-Z0-9]*|NIC4[A-Z0-9]*|AVIRIS[A-Z0-9]*)_(?:A?REF|RREF|REFF|REFL|TRANS|EMIS)\\.TXT$", name)
+    m = re.search(r"_(ASD[A-Z0-9]*|BECK[A-Z0-9]*|NIC4[A-Z0-9]*|AVIRIS[A-Z0-9]*)_(?:A?REF|RREF|REFF|REFL|TRANS|EMIS)\.TXT$", name)
     if not m:
         return None, "unknown_instrument"
     code = m.group(1)
     family = next(tag for tag in ("ASD", "BECK", "NIC4", "AVIRIS") if code.startswith(tag))
     matches = [(path, values) for path, values in wavefiles.items()
-               if re.search(r"_WAVELENGTHS_" + family + r"(?:_|\\.)", _name(path), re.I)
+               if re.search(r"_WAVELENGTHS_" + family + r"(?:_|\.)", _name(path), re.I)
                and len(values) == count]
     if len(matches) != 1:
         return None, "missing_or_ambiguous_wavelength_axis"
@@ -183,7 +183,7 @@ def prepare(archive, output, start_nm=400, stop_nm=2500, step_nm=5, min_coverage
                 "source_checksum_sha256": digest(archive),
             })
     if not records:
-        raise ValueError("No usable spectra parsed. Inspect archive format and wavelength pairing; no fabricated records.")
+        raise ValueError(f"No usable spectra parsed (rejections: {dict(rejected)}). Inspect archive format and wavelength pairing.")
     output.mkdir(parents=True, exist_ok=True)
     _write(output / "records.parquet", records)
     manifest = {
