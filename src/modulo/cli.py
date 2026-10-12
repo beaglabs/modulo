@@ -20,13 +20,18 @@ def main(argv=None):
     x=ds.add_parser("split");x.add_argument("source",choices=["usgs-v7","usgs-v2"]);x.add_argument("--dataset");x.add_argument("--group-by",choices=["specimen"],default="specimen");x.add_argument("--train",type=float,default=.7);x.add_argument("--val",type=float,default=.15);x.add_argument("--test",type=float,default=.15);x.add_argument("--seed",type=int,default=42)
     y=ds.add_parser("validate");y.add_argument("source",choices=["usgs-v7","usgs-v2"]);y.add_argument("--dataset")
     au=ds.add_parser("audit");au.add_argument("source",choices=["usgs-v2"]);au.add_argument("--dataset",default="datasets/usgs-v2")
+    discover=ds.add_parser("discover");discover.add_argument("source",choices=["usgs-v2"]);discover.add_argument("--dataset",default="datasets/usgs-v7");discover.add_argument("--sources",default="datasets/raw/usgs-v2/sources");discover.add_argument("--output",default="datasets/usgs-v2/photo-candidates.csv");discover.add_argument("--download",action="store_true")
     e=ds.add_parser("export");e.add_argument("source",choices=["usgs-v7","usgs-v2"]);e.add_argument("--dataset");e.add_argument("--format",choices=["parquet"],default="parquet");e.add_argument("--output",required=True)
     args=p.parse_args(argv)
     if args.action=="dataset":
         from . import spectral_dataset as sd
         action=args.dataset_action
         from . import dataset_v2 as v2
-        if action=="audit": result=v2.audit(args.dataset)
+        if action=="discover":
+            from . import photo_discovery
+            if args.download: photo_discovery.download_sources(Path(args.sources).parent)
+            result=photo_discovery.discover_candidates(args.dataset,args.sources,args.output)
+        elif action=="audit": result=v2.audit(args.dataset)
         elif action=="fetch" and args.source=="usgs-v2": result=v2.fetch(args.output or "datasets/raw/usgs-v2",url=args.url,expected_sha256=args.sha256)
         elif action=="fetch": result={"archive":str(sd.fetch(args.output or "datasets/raw/ASCIIdata_splib07a.zip",url=args.url,expected_sha256=args.sha256))}
         elif action=="prepare" and args.source=="usgs-v2":
