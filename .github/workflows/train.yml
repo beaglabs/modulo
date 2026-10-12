@@ -1,0 +1,31 @@
+name: Train System 1 student
+on:
+  workflow_dispatch:
+    inputs:
+      dataset_run_id:
+        description: "Workflow run ID containing a modulo-dataset artifact with train.jsonl"
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  distill:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e .
+      - uses: actions/download-artifact@v4
+        with:
+          name: modulo-dataset
+          run-id: ${{ inputs.dataset_run_id }}
+          github-token: ${{ github.token }}
+          path: dataset
+      - run: test -f dataset/train.jsonl && modulo train --input dataset/train.jsonl --output student-head.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: modulo-trained-head
+          path: student-head.json
