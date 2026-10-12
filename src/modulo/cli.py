@@ -20,7 +20,7 @@ def main(argv=None):
     x=ds.add_parser("split");x.add_argument("source",choices=["usgs-v7","usgs-v2"]);x.add_argument("--dataset");x.add_argument("--group-by",choices=["specimen"],default="specimen");x.add_argument("--train",type=float,default=.7);x.add_argument("--val",type=float,default=.15);x.add_argument("--test",type=float,default=.15);x.add_argument("--seed",type=int,default=42)
     y=ds.add_parser("validate");y.add_argument("source",choices=["usgs-v7","usgs-v2"]);y.add_argument("--dataset")
     au=ds.add_parser("audit");au.add_argument("source",choices=["usgs-v2"]);au.add_argument("--dataset",default="datasets/usgs-v2")
-    e=ds.add_parser("export");e.add_argument("source",choices=["usgs-v7"]);e.add_argument("--dataset",default="datasets/usgs-v7");e.add_argument("--format",choices=["parquet"],default="parquet");e.add_argument("--output",required=True)
+    e=ds.add_parser("export");e.add_argument("source",choices=["usgs-v7","usgs-v2"]);e.add_argument("--dataset");e.add_argument("--format",choices=["parquet"],default="parquet");e.add_argument("--output",required=True)
     args=p.parse_args(argv)
     if args.action=="dataset":
         from . import spectral_dataset as sd
@@ -35,7 +35,9 @@ def main(argv=None):
         elif action=="split" and args.source=="usgs-v2": result=v2.split(args.dataset or "datasets/usgs-v2",seed=args.seed,train=args.train,val=args.val,test=args.test)
         elif action=="split": result=sd.split(args.dataset or "datasets/usgs-v7",seed=args.seed,train=args.train,val=args.val,test=args.test)
         elif action=="validate": result=v2.audit(args.dataset or "datasets/usgs-v2") if args.source=="usgs-v2" else sd.validate(args.dataset or "datasets/usgs-v7")
-        else: result={"output":str(sd.export(args.dataset,args.output))}
+        elif action=="export" and args.source=="usgs-v2":
+            result=v2.export(args.dataset or "datasets/usgs-v2",args.output)
+        else: result={"output":str(sd.export(args.dataset or "datasets/usgs-v7",args.output))}
         print(json.dumps(result,indent=2))
     elif args.action=="domains":print("\n".join(DOMAINS))
     elif args.action=="components":print("\n".join(defaults().names(args.kind)))

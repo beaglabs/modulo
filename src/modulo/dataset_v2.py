@@ -217,3 +217,20 @@ def stage_unpaired(spectral_dir, output, archive):
         "message":"Spectra prepared. No guessed specimen-photo links created."}
     (output/"staging-manifest.json").write_text(json.dumps(result,indent=2))
     return result
+
+def export(dataset, output):
+    """Export only validated paired V2 records; report staging without false success."""
+    dataset, output = Path(dataset), Path(output)
+    status = audit(dataset)
+    if not status.get("passed"):
+        return {"exported": False, "output": None,
+                "status": status.get("status","validation_failed"),
+                "verified_pairs": status.get("verified_pairs", 0),
+                "reason": "No validated paired USGS V2 dataset available"}
+    if output.resolve() == dataset.resolve():
+        return {"exported": True, "output": str(output), "pairs": status["pairs"],
+                "note": "Validated V2 dataset already at output path"}
+    if output.exists() and any(output.iterdir()):
+        raise ValueError("Export destination must be empty")
+    shutil.copytree(dataset,output,dirs_exist_ok=True)
+    return {"exported": True, "output": str(output), "pairs": status["pairs"]}
