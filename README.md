@@ -66,6 +66,10 @@ The head can be loaded with `LinearHead(**json.load(open("student-head.json")))`
 
 A manually dispatched GitHub Actions workflow can train the head from a dataset artifact. It does **not** pretend to train a 60M transformer without a real dataset, and it does not invoke the paid teacher automatically.
 
+## USGS spectral dataset preparation
+
+`modulo dataset fetch usgs-v7`, `prepare`, `split`, `validate`, and `export` build a provenance-tracked Parquet dataset from measured USGS splib07a spectra. Install `pip install -e '.[dataset]'`. See [the dataset guide](docs/spectral-dataset.md) for commands and the important limitations of filename-derived specimen identifiers and provisional labels.
+
 ## Current scope
 
 The SDK and plugin architecture are operational scaffolding. Advanced raster/Zarr ingestion, large neural fusion, temporal training, general schema heads, checkpoint lifecycle, and validated distillation remain future work. No hardware-specific model performance is claimed.
