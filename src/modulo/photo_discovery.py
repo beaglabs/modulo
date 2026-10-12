@@ -92,9 +92,11 @@ def download_sources(output, archive_urls=None):
     report={"archives":summaries,"failures":failures,"status":"partial" if failures else "ok","html_files":len(list((output/"sources").rglob("*.html")))+len(list((output/"sources").rglob("*.htm"))),
             "image_files":sum(1 for p in (output/"sources").rglob("*") if p.suffix.lower() in IMAGE_SUFFIXES),
             "note":"Discovered assets only; no inferred specimen identity"}
-    (output/"discovery-manifest.json").write_text(json.dumps(report,indent=2))
     if failures and not summaries and report["html_files"] == 0:
         report["status"]="source_download_failed"
+    if not selected:
+        report["status"]="no_archives_discovered"
+    (output/"discovery-manifest.json").write_text(json.dumps(report,indent=2))
     return report
 
 def discover_candidates(dataset="datasets/usgs-v7", sources="datasets/raw/usgs-v2/sources",

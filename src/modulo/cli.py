@@ -29,8 +29,14 @@ def main(argv=None):
         from . import dataset_v2 as v2
         if action=="discover":
             from . import photo_discovery
-            if args.download: photo_discovery.download_sources(Path(args.sources).parent)
-            result=photo_discovery.discover_candidates(args.dataset,args.sources,args.output)
+            download_report = photo_discovery.download_sources(Path(args.sources).parent) if args.download else None
+            if download_report and not download_report["html_files"]:
+                result={"status":download_report["status"],"candidate_links":0,"verified_pairs":0,
+                        "download":download_report,
+                        "error":"No HTML metadata was downloaded; cannot search for specimen-photo pairs."}
+            else:
+                result=photo_discovery.discover_candidates(args.dataset,args.sources,args.output)
+                if download_report: result["download"]=download_report
         elif action=="audit": result=v2.audit(args.dataset)
         elif action=="fetch" and args.source=="usgs-v2": result=v2.fetch(args.output or "datasets/raw/usgs-v2",url=args.url,expected_sha256=args.sha256)
         elif action=="fetch": result={"archive":str(sd.fetch(args.output or "datasets/raw/ASCIIdata_splib07a.zip",url=args.url,expected_sha256=args.sha256))}
