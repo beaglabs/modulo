@@ -17,6 +17,7 @@ video = ["opencv-python-headless>=4.9","pillow>=10","torch>=2.2","transformers>=
 raster = ["rasterio>=1.3"]
 geospatial = ["rasterio>=1.3", "pyproj>=3.6"]
 science = ["xarray>=2024.1", "zarr>=2.17", "pyteomics>=4.6"]
+dataset = ["pyarrow>=15"]
 all = ["torch>=2.2","fastapi>=0.110","uvicorn>=0.29","pillow>=10","soundfile>=0.12","transformers>=4.44,<5","rasterio>=1.3","pyproj>=3.6","xarray>=2024.1","zarr>=2.17","pyteomics>=4.6"]
 [project.scripts]
 modulo = "modulo.cli:main"
