@@ -110,6 +110,17 @@ def split(dataset, seed=42, train=.7, val=.15, test=.15):
 
 def audit(dataset):
     dataset=Path(dataset)
+    if not (dataset/"records.parquet").is_file():
+        staging = dataset/"staging-manifest.json"
+        if staging.is_file():
+            manifest = json.loads(staging.read_text())
+            result = {"passed": False, "status": "awaiting_verified_photo_pairs",
+                      "spectra": manifest.get("spectra", 0), "verified_pairs": 0,
+                      "worklist": manifest.get("worklist"),
+                      "next": "Verify specimen-photo identities, then prepare with --crosswalk and --images-root in a fresh directory."}
+            (dataset/"audit.json").write_text(json.dumps(result,indent=2))
+            return result
+        raise FileNotFoundError(f"No prepared V2 dataset at {dataset}. Run modulo dataset prepare usgs-v2 first.")
     rows=_read(dataset/"records.parquet")
     by_sample=defaultdict(set)
     by_specimen=defaultdict(set)
