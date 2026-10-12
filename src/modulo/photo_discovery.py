@@ -64,7 +64,7 @@ def download_sources(output, archive_urls=None):
     for entry in selected:
         url=entry["url"]
         host=(urlparse(url).hostname or "").lower()
-        if urlparse(url).scheme!="https" or not (host=="sciencebase.gov" or host.endswith(".sciencebase.gov")):
+        if urlparse(url).scheme!="https" or not (host=="sciencebase.gov" or host.endswith(".sciencebase.gov") or host=="sciencebase.usgs.gov"):
             if not archive_urls: raise ValueError("Untrusted archive location: "+url)
             if urlparse(url).scheme!="https": raise ValueError("HTTPS required")
         location=output/entry["name"]
