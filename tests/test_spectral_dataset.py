@@ -12,12 +12,12 @@ class DatasetTests(unittest.TestCase):
         archive = root / "source.zip"
         wavelengths = "\n".join(str(.4 + .1 * i) for i in range(5))
         with ZipFile(archive, "w") as z:
-            z.writestr("Wavelengths/splib07a_Wavelengths_ASD_demo.txt", wavelengths)
+            z.writestr("Wavelengths/splib07a_Wavelengths_ASD_0.35-2.5_microns_2151_ch.txt", wavelengths)
             for index, mineral in enumerate(("Kaolinite", "Quartz", "Hematite", "Olivine", "Calcite", "Gypsum")):
-                name = f"ChapterM_Minerals/splib07a_{mineral}.SPEC{index}_ASD_demo_AREF.txt"
+                name = f"ChapterM_Minerals/splib07a_{mineral}.SPEC{index}_ASDFRa_AREF.txt"
                 z.writestr(name, "\n".join(str((i + 1) * (index + 1) / 100) for i in range(5)))
-            z.writestr("ChapterV_Vegetation/splib07a_Leaf.S1_ASD_demo_AREF.txt", "\n".join([".1"] * 5))
-            z.writestr("ChapterM_Minerals/splib07b_Quartz.X_ASD_demo_AREF.txt", "\n".join([".1"] * 5))
+            z.writestr("ChapterV_Vegetation/splib07a_Leaf.S1_ASDFRa_AREF.txt", "\n".join([".1"] * 5))
+            z.writestr("ChapterM_Minerals/splib07b_Quartz.X_ASDFRa_AREF.txt", "\n".join([".1"] * 5))
         return archive
 
     def test_prepare_split_validate_export(self):
@@ -47,9 +47,9 @@ class DatasetTests(unittest.TestCase):
             sd.split("/nonexistent", train=.8, val=.2, test=.2)
 
     def test_wavelength_pair_ambiguity_rejected(self):
-        wl = {"dir/a_Wavelengths_ASD_demo.txt": sd.np.arange(5),
-              "dir/b_Wavelengths_ASD_demo.txt": sd.np.arange(5)}
-        match, reason = sd._wavelength_for("splib07a_Quartz_A_ASD_demo_AREF.txt", wl, 5)
+        wl = {"dir/a_Wavelengths_ASD_0.35-2.5_microns_2151_ch.txt": sd.np.arange(5),
+              "dir/b_Wavelengths_ASD_0.35-2.5_microns_2151_ch.txt": sd.np.arange(5)}
+        match, reason = sd._wavelength_for("splib07a_Quartz_A_ASDFRa_AREF.txt", wl, 5)
         self.assertIsNone(match)
         self.assertEqual(reason, "missing_or_ambiguous_wavelength_axis")
 
