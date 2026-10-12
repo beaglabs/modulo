@@ -73,3 +73,7 @@ A manually dispatched GitHub Actions workflow can train the head from a dataset 
 ## Current scope
 
 The SDK and plugin architecture are operational scaffolding. Advanced raster/Zarr ingestion, large neural fusion, temporal training, general schema heads, checkpoint lifecycle, and validated distillation remain future work. No hardware-specific model performance is claimed.
+
+## Spatial and multimodal features
+
+The opt-in geospatial layer supports XYZ tile addressing, read-only offline MBTiles, GeoJSON geometries, CRS reprojection, buffering, intersections and small spatial joins. `MultimodalFusion` provides deterministic, mask-aware feature fusion across existing encoders. See [geospatial usage and limitations](docs/geospatial.md). Install `pip install -e '.[geo]'` for geometries.
